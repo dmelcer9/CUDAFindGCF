@@ -1,7 +1,6 @@
 
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-#include "device_functions.h"
+#include "kernel.cuh"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -9,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 
+//Minimum and maximum values for search
 #define A0MIN -9
 #define A0MAX 9
 #define B0MIN -9
@@ -27,9 +27,13 @@
 #define MAXTERMS 15
 #define MAXDELTA 0.00001
 
+#define PRINTRESULTS //Print results to console
+#define PRINTTOFILE //Save results to file
+#define PRINTPROGRESS //Print out progress messages periodacally
+
 #define RANGE(NUM) (NUM##MAX + 1 - NUM##MIN)
 
-#define TPB 1024
+#define TPB 1000
 #define BLOCKS 1024
 #define THREADSATONCE (TPB*BLOCKS)
 
@@ -38,39 +42,43 @@
 #define NUMRUNS (((PERMUTATIONS-1)/THREADSATONCE)+1)  
 
 
+
+/**
+  * Helper function to check for CUDA errors
+  * @param cu the error to check
+  */
 __host__ void CHECK_CUDA(cudaError_t cu){
 	if (cu != cudaSuccess){
 		std::cout << "CUDA ERROR: "<< cudaGetErrorString(cu) << std::endl;
 	}
 }
 
-typedef struct params{
-	int a0;
-	int b0;
-	int a;
-	int b;
-	int c;
-	int d;
-	int e;
-} params;
 
-typedef struct runRecord{
-	params param;
-	double delta;
-} runRecord;
-
-__device__ void recordRun(params param, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
+/**
+  * Record the result of a run
+  * @param param the starting parameters of the function
+  * @param result the result to record
+  * @param delta the difference between the result and the number
+  * @param recordPointer a the array where the records are stored
+  * @param recordNum a pointer to the current record index
+  */
+inline __device__ void recordRun(params param, double result, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
 	unsigned long long int address = atomicAdd(recordNum, 1);
 
 	runRecord curRec;
 	curRec.param = param;
 	curRec.delta = delta;
+	curRec.result = result;
 
 	recordPointer[address] = curRec;	
 	
 }
 
-__device__ params getParams(unsigned long long int offset){
+/**
+  * Get the runtime parameters
+  * @param offset the offset tfor the parameters
+  */
+inline __device__ params getParams(unsigned long long int offset){
 	unsigned long long int blocksz = blockDim.x*blockDim.y*blockDim.z;
 	unsigned long long int block1d = threadIdx.x + blockDim.x*threadIdx.y + blockDim.x*blockDim.y*threadIdx.z;
 	unsigned long long int grid1d = blockIdx.x + gridDim.x*blockIdx.y + gridDim.x*gridDim.y*blockIdx.z;
@@ -104,17 +112,11 @@ __device__ params getParams(unsigned long long int offset){
 
 }
 
-__global__ void calcFraction(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo){
-	params runPars = getParams(offset);
-	/*runPars.a0 = 11;
-	runPars.b0 = 17;
-	runPars.a = -5;
-	runPars.b = 3;
-	runPars.c = -7;
-	runPars.d = 5;
-	runPars.e = -1;*/
-
-
+/**
+  * Calculate a continued fraction, given the starting parameters.
+  * @param par The starting parameters of the calculation
+  */
+inline __device__ double calcFraction(params runPars){
 	int iterNum = 0;
 
 	double hBefore1 = 1;
@@ -123,10 +125,7 @@ __global__ void calcFraction(unsigned long long int offset, runRecord* recordPoi
 	double kBefore2 = 1;
 	double aBefore = 1;
 
-	double delta = 0;
-	double prevDelta = convergeTo;
-
-	//recordRun(runPars, threadIdx.x + blockDim.x*blockIdx.x , recordPointer, recordNum);
+	double convergent = 0;
 
 	while (iterNum < MAXTERMS){
 		double newA = (iterNum == 0) ? runPars.a0 : runPars.a*iterNum*iterNum + runPars.b*iterNum + runPars.c;
@@ -135,12 +134,9 @@ __global__ void calcFraction(unsigned long long int offset, runRecord* recordPoi
 		double curNum = newB*hBefore1 + aBefore*hBefore2;
 		double curDen = newB*kBefore1 + aBefore*kBefore2;
 
-		if (curDen == 0) return;
+		if (curDen == 0) return NAN;
 
-		double convergent = curNum / curDen;
-
-		delta = abs(convergent - convergeTo);
-		
+		convergent = curNum / curDen;
 
 		hBefore2 = hBefore1;
 		hBefore1 = curNum;
@@ -148,62 +144,76 @@ __global__ void calcFraction(unsigned long long int offset, runRecord* recordPoi
 		kBefore2 = kBefore1;
 		kBefore1 = curDen;
 
-		prevDelta = delta;
 		iterNum++;
 		aBefore = newA;
 	}
 
+	return convergent;
+}
+
+/**
+  * The method for calculating the continued fraction and logging the result
+  * @param offset the starting thread offset
+  * @param recordPointer the array for the result of the calculation
+  * @param recordNum the index for the array
+  * @param convergeTo the value that the delta is calculated from
+  */
+__global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo){
+	params runPars = getParams(offset);
+
+	double convergent = calcFraction(runPars);
+
+	double delta = abs(convergent - convergeTo);
+
 	if (delta < MAXDELTA){
-		recordRun(runPars, delta, recordPointer, recordNum);
+		recordRun(runPars, convergent, delta, recordPointer, recordNum);
 	}
 }
 
 
-std::string paramsToString(params par){
-	
-	return "A0= " + std::to_string(par.a0) + " ,B0= " + std::to_string(par.b0) + " ,A= " + std::to_string(par.a) + 
-		" ,B= " + std::to_string(par.b) + " ,C= " + std::to_string(par.c) + " ,D= " + std::to_string(par.d) + " ,E= " + std::to_string(par.e);
-	
-}
-
-std::string runRecordToString(runRecord rec){
-	std::ostringstream os;
-	os << paramsToString(rec.param) << std::setprecision(15) << " ,delta= " << rec.delta;
-	return os.str();
-}
 
 
-
-//void compactThread
 
 int main(){
+
+
+#ifdef PRINTTOFILE
+	time_t currentTime;
+	struct tm* timeInfo;
 	
-	/*
+	time(&currentTime);
+	timeInfo = localtime(&currentTime);
 
-	cudaEvent_t* events = (cudaEvent_t*) malloc(sizeof(cudaEvent_t)*NUMRUNS);
-	for (int i = 0; i < NUMRUNS; i++){
-		CHECK_CUDA(cudaEventCreate(&events[i]));
-	}
+	std::stringstream filename;
+	filename << "Result " << timeInfo->tm_year+1900 << " " << timeInfo->tm_mon + 1 << " " <<
+		timeInfo->tm_mday << " " << timeInfo->tm_hour << " " << timeInfo->tm_min << " " << timeInfo->tm_sec << ".csv";
 
-	runRecord** recordGrid = (runRecord**) malloc(sizeof(runRecord*)*NUMRUNS);
-	*/
-
+	
+	CSVWriter fileWriter(filename.str());
+#endif
 
 	std::cout << std::setprecision(15);
 
 	runRecord* d_recordPointer;
 	unsigned long long int* d_recordNum;
 
+	CHECK_CUDA(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+
 	CHECK_CUDA(cudaMalloc(&d_recordPointer, sizeof(runRecord)*THREADSATONCE));
 	CHECK_CUDA(cudaMalloc(&d_recordNum, sizeof(unsigned long long int)));
 
+	cudaEvent_t startingevent, endevent;
+	CHECK_CUDA(cudaEventCreate(&startingevent));
+	CHECK_CUDA(cudaEventCreate(&endevent));
+	CHECK_CUDA(cudaEventRecord(startingevent));
 
 	for (unsigned long long int i = 0; i < NUMRUNS; i++){
 
 		
+
 		CHECK_CUDA(cudaMemset(d_recordNum, 0, sizeof(unsigned long long int)));
 
-		calcFraction << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, 14.13472514173469);
+		calculateGCF << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, 14.13472514173469);
 		cudaDeviceSynchronize();
 		CHECK_CUDA(cudaGetLastError());
 
@@ -216,16 +226,38 @@ int main(){
 
 
 		for (int j = 0; j < h_recordNum; j++){
-			std::cout << runRecordToString(h_recordPointer[j]) << std::endl;
+#ifdef PRINTRESULTS
+			printRecord(h_recordPointer[j]);
+#endif
+
+#ifdef PRINTTOFILE
+			fileWriter.write(h_recordPointer[j]);
+#endif
 		}
 
-		
+#ifdef PRINTPROGRESS
+		if(i%100==0) std::cout << "Offset: " << i*THREADSATONCE << ", Progress: " << ((double)i * 100) / NUMRUNS << "%" << std::endl;
+#endif
+
 		free(h_recordPointer);
 	}
+
+
+#ifdef PRINTTOFILE
+	fileWriter.flush();
+#endif
+	
+	CHECK_CUDA(cudaEventRecord(endevent));
+
+	float timeElapsed = 0;
+	CHECK_CUDA(cudaDeviceSynchronize());
+
+	CHECK_CUDA(cudaEventElapsedTime(&timeElapsed, startingevent, endevent));
+	std::cout << "Time elapsed: " << std::setprecision(0) << timeElapsed/1000 << " seconds" << std::endl;
 
 	CHECK_CUDA(cudaFree(d_recordPointer));
 	CHECK_CUDA(cudaFree(d_recordNum));
 	cudaDeviceReset();
-	//system("pause");
+	system("pause");
 	return 0;
 }
