@@ -3,12 +3,12 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <memory>
 #include <iomanip>
-#include "kernel.cuh"
-#include "RecordStructs.h"
 #include <list>
 #include <iterator>
+
+#include "RunRecord.h"
+#include "Params.h"
 
 class CSVWriter{
 public:

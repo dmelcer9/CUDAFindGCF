@@ -236,12 +236,13 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   <ItemGroup>
     <ClInclude Include="CSVWriter.h" />
     <ClInclude Include="kernel.cuh" />
-    <ClInclude Include="RecordStructs.h" />
-    <ClInclude Include="printRecord.h" />
+    <ClInclude Include="Params.h" />
+    <ClInclude Include="RunRecord.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CSVWriter.cpp" />
-    <ClCompile Include="printRecord.cpp" />
+    <ClCompile Include="Params.cpp" />
+    <ClCompile Include="RunRecord.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

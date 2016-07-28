@@ -1,13 +1,6 @@
 
 #include "kernel.cuh"
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-
 //Minimum and maximum values for search
 #define A0MIN -9
 #define A0MAX 9
@@ -33,7 +26,7 @@
 
 #define RANGE(NUM) (NUM##MAX + 1 - NUM##MIN)
 
-#define TPB 1000
+#define TPB 1024
 #define BLOCKS 1024
 #define THREADSATONCE (TPB*BLOCKS)
 
@@ -62,7 +55,7 @@ __host__ void CHECK_CUDA(cudaError_t cu){
   * @param recordPointer a the array where the records are stored
   * @param recordNum a pointer to the current record index
   */
-inline __device__ void recordRun(params param, double result, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
+__device__ void recordRun(params param, double result, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
 	unsigned long long int address = atomicAdd(recordNum, 1);
 
 	runRecord curRec;
@@ -78,7 +71,7 @@ inline __device__ void recordRun(params param, double result, double delta, runR
   * Get the runtime parameters
   * @param offset the offset tfor the parameters
   */
-inline __device__ params getParams(unsigned long long int offset){
+__device__ params getParams(unsigned long long int offset){
 	unsigned long long int blocksz = blockDim.x*blockDim.y*blockDim.z;
 	unsigned long long int block1d = threadIdx.x + blockDim.x*threadIdx.y + blockDim.x*blockDim.y*threadIdx.z;
 	unsigned long long int grid1d = blockIdx.x + gridDim.x*blockIdx.y + gridDim.x*gridDim.y*blockIdx.z;
@@ -116,7 +109,7 @@ inline __device__ params getParams(unsigned long long int offset){
   * Calculate a continued fraction, given the starting parameters.
   * @param par The starting parameters of the calculation
   */
-inline __device__ double calcFraction(params runPars){
+__device__ double calcFraction(params runPars){
 	int iterNum = 0;
 
 	double hBefore1 = 1;

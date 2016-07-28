@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+
 typedef struct params{
 	int a0;
 	int b0;
@@ -10,8 +12,4 @@ typedef struct params{
 	int e;
 } params;
 
-typedef struct runRecord{
-	params param;
-	double result;
-	double delta;
-} runRecord;
+std::string paramsToString(params par);
