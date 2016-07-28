@@ -9,8 +9,8 @@
 
 typedef struct runRecord{
 	params param;
-	double result;
-	double delta;
+	float result;
+	float delta;
 } runRecord;
 
 std::string runRecordToString(runRecord rec);

@@ -55,7 +55,7 @@ __host__ void CHECK_CUDA(cudaError_t cu){
   * @param recordPointer a the array where the records are stored
   * @param recordNum a pointer to the current record index
   */
-__device__ void recordRun(params param, double result, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
+__device__ void recordRun(params param, float result, float delta, runRecord* recordPointer, unsigned long long int* recordNum){
 	unsigned long long int address = atomicAdd(recordNum, 1);
 
 	runRecord curRec;
@@ -109,23 +109,23 @@ __device__ params getParams(unsigned long long int offset){
   * Calculate a continued fraction, given the starting parameters.
   * @param par The starting parameters of the calculation
   */
-__device__ double calcFraction(params runPars){
+__device__ float calcFraction(params runPars){
 	int iterNum = 0;
 
-	double hBefore1 = 1;
-	double hBefore2 = 0;
-	double kBefore1 = 0;
-	double kBefore2 = 1;
-	double aBefore = 1;
+	float hBefore1 = 1;
+	float hBefore2 = 0;
+	float kBefore1 = 0;
+	float kBefore2 = 1;
+	float aBefore = 1;
 
-	double convergent = 0;
+	float convergent = 0;
 
 	while (iterNum < MAXTERMS){
-		double newA = (iterNum == 0) ? runPars.a0 : runPars.a*iterNum*iterNum + runPars.b*iterNum + runPars.c;
-		double newB = (iterNum == 0) ? runPars.b0 : runPars.d*iterNum + runPars.e;
+		float newA = (iterNum == 0) ? runPars.a0 : runPars.a*iterNum*iterNum + runPars.b*iterNum + runPars.c;
+		float newB = (iterNum == 0) ? runPars.b0 : runPars.d*iterNum + runPars.e;
 
-		double curNum = newB*hBefore1 + aBefore*hBefore2;
-		double curDen = newB*kBefore1 + aBefore*kBefore2;
+		float curNum = newB*hBefore1 + aBefore*hBefore2;
+		float curDen = newB*kBefore1 + aBefore*kBefore2;
 
 		if (curDen == 0) return NAN;
 
@@ -151,12 +151,12 @@ __device__ double calcFraction(params runPars){
   * @param recordNum the index for the array
   * @param convergeTo the value that the delta is calculated from
   */
-__global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo){
+__global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, float convergeTo){
 	params runPars = getParams(offset);
 
-	double convergent = calcFraction(runPars);
+	float convergent = calcFraction(runPars);
 
-	double delta = abs(convergent - convergeTo);
+	float delta = abs(convergent - convergeTo);
 
 	if (delta < MAXDELTA){
 		recordRun(runPars, convergent, delta, recordPointer, recordNum);

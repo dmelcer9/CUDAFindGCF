@@ -13,9 +13,9 @@
 #include "RunRecord.h"
 
 __host__ void CHECK_CUDA(cudaError_t cu);
-__device__ void recordRun(params param, double delta, runRecord* recordPointer, unsigned long long int* recordNum);
+__device__ void recordRun(params param, float delta, runRecord* recordPointer, unsigned long long int* recordNum);
 __device__ params getParams(unsigned long long int offset);
-__global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo);
-__device__ double calcFraction(params runPars);
+__global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, float convergeTo);
+__device__ float calcFraction(params runPars);
 
 int main();
