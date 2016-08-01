@@ -2,23 +2,23 @@
 #include "kernel.cuh"
 
 //Minimum and maximum values for search
-#define A0MIN -9
-#define A0MAX 9
-#define B0MIN -9
-#define B0MAX 9
-#define AMIN -9
-#define AMAX 9
-#define BMIN -9
-#define BMAX 9
-#define CMIN -9
-#define CMAX 9
-#define DMIN -9
-#define DMAX 9
-#define EMIN -9
-#define EMAX 9
+const long long AMIN = -19L;
+const long long AMAX = 19L;
+const long long BMIN = -19L;
+const long long BMAX = 19L;
+const long long CMIN = -19L;
+const long long CMAX = 19L;
+const long long DMIN = -19L;
+const long long DMAX = 19L;
+const long long EMIN = -19L;
+const long long EMAX = 19L;
+const long long FMIN = -19L;
+const long long FMAX = 19L;
+const long long GMIN = -19L;
+const long long GMAX = 19L;
 
 #define MAXTERMS 15
-#define MAXDELTA 0.00001
+#define MAXDELTA 1e-7
 
 #define PRINTRESULTS //Print results to console
 #define PRINTTOFILE //Save results to file
@@ -30,7 +30,7 @@
 #define BLOCKS 1024
 #define THREADSATONCE (TPB*BLOCKS)
 
-#define PERMUTATIONS (RANGE(A0)*RANGE(B0)*RANGE(A)*RANGE(B)*RANGE(C)*RANGE(D)*RANGE(E))
+#define PERMUTATIONS (RANGE(A)*RANGE(B)*RANGE(C)*RANGE(D)*RANGE(E)*RANGE(F)*RANGE(G))
 
 #define NUMRUNS (((PERMUTATIONS-1)/THREADSATONCE)+1)  
 
@@ -71,7 +71,7 @@ __device__ void recordRun(params param, double result, double delta, runRecord* 
   * Get the runtime parameters
   * @param offset the offset tfor the parameters
   */
-__device__ params getParams(unsigned long long int offset){
+__device__ params getParams(unsigned long long int offset, double convergeTo){
 	unsigned long long int blocksz = blockDim.x*blockDim.y*blockDim.z;
 	unsigned long long int block1d = threadIdx.x + blockDim.x*threadIdx.y + blockDim.x*blockDim.y*threadIdx.z;
 	unsigned long long int grid1d = blockIdx.x + gridDim.x*blockIdx.y + gridDim.x*gridDim.y*blockIdx.z;
@@ -80,6 +80,13 @@ __device__ params getParams(unsigned long long int offset){
 	long long int workId = globalIdx1D + offset;
 
 	params par;
+
+	
+	par.g = workId % RANGE(G) + GMIN;
+	workId /= RANGE(G);
+
+	par.f = workId % RANGE(F) + FMIN;
+	workId /= RANGE(F);
 	
 	par.e = workId % RANGE(E) + EMIN;
 	workId /= RANGE(E);
@@ -94,12 +101,10 @@ __device__ params getParams(unsigned long long int offset){
 	workId /= RANGE(B);
 
 	par.a = workId % RANGE(A) + AMIN;
-	workId /= RANGE(A);
+	
+	par.b0 = (int)convergeTo;
 
-	par.b0 = workId % RANGE(B0) + B0MIN;
-	workId /= RANGE(B0);
-
-	par.a0 = workId % RANGE(A0) + A0MIN;
+	
 	
 	return par;
 
@@ -110,7 +115,6 @@ __device__ params getParams(unsigned long long int offset){
   * @param par The starting parameters of the calculation
   */
 __device__ double calcFraction(params runPars){
-	int iterNum = 0;
 
 	double hBefore1 = 1;
 	double hBefore2 = 0;
@@ -120,14 +124,12 @@ __device__ double calcFraction(params runPars){
 
 	double convergent = 0;
 
-	while (iterNum < MAXTERMS){
-		double newA = (iterNum == 0) ? runPars.a0 : runPars.a*iterNum*iterNum + runPars.b*iterNum + runPars.c;
-		double newB = (iterNum == 0) ? runPars.b0 : runPars.d*iterNum + runPars.e;
+	for (int iterNum = 0; iterNum < MAXTERMS; iterNum++){
+		double newA = runPars.a*iterNum*iterNum*iterNum + runPars.b*iterNum*iterNum + runPars.c*iterNum + runPars.d;
+		double newB = (iterNum == 0) ? runPars.b0 : runPars.e*iterNum*iterNum + runPars.f*iterNum + runPars.g;
 
 		double curNum = newB*hBefore1 + aBefore*hBefore2;
 		double curDen = newB*kBefore1 + aBefore*kBefore2;
-
-		if (curDen == 0) return NAN;
 
 		convergent = curNum / curDen;
 
@@ -137,7 +139,6 @@ __device__ double calcFraction(params runPars){
 		kBefore2 = kBefore1;
 		kBefore1 = curDen;
 
-		iterNum++;
 		aBefore = newA;
 	}
 
@@ -152,7 +153,7 @@ __device__ double calcFraction(params runPars){
   * @param convergeTo the value that the delta is calculated from
   */
 __global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo){
-	params runPars = getParams(offset);
+	params runPars = getParams(offset,convergeTo);
 
 	double convergent = calcFraction(runPars);
 
@@ -207,8 +208,6 @@ int main(){
 		CHECK_CUDA(cudaMemset(d_recordNum, 0, sizeof(unsigned long long int)));
 
 		calculateGCF << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, 14.13472514173469);
-		cudaDeviceSynchronize();
-		CHECK_CUDA(cudaGetLastError());
 
 		unsigned long long int h_recordNum;
 		CHECK_CUDA(cudaMemcpy(&h_recordNum, d_recordNum, sizeof(unsigned long long int), cudaMemcpyDeviceToHost));

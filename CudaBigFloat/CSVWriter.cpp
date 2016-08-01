@@ -2,7 +2,7 @@
 
 CSVWriter::CSVWriter(std::string outfile):fileName(outfile),cache(){
 
-	cache.push_back("A0,B0,A,B,C,D,E,Result,Delta\n");
+	cache.push_back("A,B,C,D,E,F,G,Result,Delta\n");
 	
 }
 
@@ -12,13 +12,13 @@ void CSVWriter::write(runRecord r){
 
 	params par = r.param;
 	
-	strstrm << par.a0 << ",";
-	strstrm << par.b0 << ",";
 	strstrm << par.a << ",";
 	strstrm << par.b << ",";
 	strstrm << par.c << ",";
 	strstrm << par.d << ",";
 	strstrm << par.e << ",";
+	strstrm << par.f << ",";
+	strstrm << par.g << ",";
 
 	strstrm << std::setprecision(16);
 
