@@ -206,7 +206,7 @@ int main(){
 		
 
 		CHECK_CUDA(cudaMemset(d_recordNum, 0, sizeof(unsigned long long int)));
-
+		//14.13472514173469
 		calculateGCF << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, 14.13472514173469);
 
 		unsigned long long int h_recordNum;
