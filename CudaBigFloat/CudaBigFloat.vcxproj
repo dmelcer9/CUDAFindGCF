@@ -194,8 +194,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalOptions>/clr %(AdditionalOptions)</AdditionalOptions>
-      <ExceptionHandling>false</ExceptionHandling>
+      <ExceptionHandling>Sync</ExceptionHandling>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -239,11 +238,14 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="CSVWriter.h" />
     <ClInclude Include="kernel.cuh" />
     <ClInclude Include="Params.h" />
+    <ClInclude Include="PrintToFile.h" />
+    <ClInclude Include="ProcessQueue.h" />
     <ClInclude Include="RunRecord.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CSVWriter.cpp" />
     <ClCompile Include="Params.cpp" />
+    <ClCompile Include="PrintToFile.cpp" />
     <ClCompile Include="RunRecord.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -166,25 +166,21 @@ __global__ void calculateGCF(unsigned long long int offset, runRecord* recordPoi
 
 
 
-
-
 int main(){
 
+	ProcessQueue<runRecord> queue;
 
 #ifdef PRINTTOFILE
-	time_t currentTime;
-	struct tm* timeInfo;
-	
-	time(&currentTime);
-	timeInfo = localtime(&currentTime);
-
-	std::stringstream filename;
-	filename << "Result " << timeInfo->tm_year+1900 << " " << timeInfo->tm_mon + 1 << " " <<
-		timeInfo->tm_mday << " " << timeInfo->tm_hour << " " << timeInfo->tm_min << " " << timeInfo->tm_sec << ".csv";
-
-	
-	CSVWriter fileWriter(filename.str());
+	queue.addSetup(setupPrintToFile);
+	queue.addProcess(processPrintToFile);
+	queue.addCleanup(cleanupPrintToFile);
 #endif
+
+#ifdef PRINTRESULTS
+	queue.addProcess(printRecord);
+#endif
+	
+	queue.setup();
 
 	std::cout << std::setprecision(15);
 
@@ -208,6 +204,7 @@ int main(){
 		CHECK_CUDA(cudaMemset(d_recordNum, 0, sizeof(unsigned long long int)));
 		//14.13472514173469
 		calculateGCF << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, 14.13472514173469);
+		queue.clearQueue();
 
 		unsigned long long int h_recordNum;
 		CHECK_CUDA(cudaMemcpy(&h_recordNum, d_recordNum, sizeof(unsigned long long int), cudaMemcpyDeviceToHost));
@@ -218,13 +215,7 @@ int main(){
 
 
 		for (int j = 0; j < h_recordNum; j++){
-#ifdef PRINTRESULTS
-			printRecord(h_recordPointer[j]);
-#endif
-
-#ifdef PRINTTOFILE
-			fileWriter.write(h_recordPointer[j]);
-#endif
+			queue.addTask(h_recordPointer[j]);
 		}
 
 #ifdef PRINTPROGRESS
@@ -235,9 +226,8 @@ int main(){
 	}
 
 
-#ifdef PRINTTOFILE
-	fileWriter.flush();
-#endif
+	queue.clearQueue();
+	queue.finish();
 	
 	CHECK_CUDA(cudaEventRecord(endevent));
 
