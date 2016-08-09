@@ -20,7 +20,7 @@ public:
 		if (!isSetup || isFinished) stateError();
 
 
-		for (int i = 0; i < processes.size(); i++){
+		for (size_t i = 0; i < processes.size(); i++){
 			processSingle(processes[i]);
 		}
 
@@ -44,7 +44,7 @@ public:
 	void setup(){
 		if (isSetup || isFinished) stateError();
 
-		for (int i = 0; i < setupTasks.size(); i++){
+		for (size_t i = 0; i < setupTasks.size(); i++){
 			setupTasks[i]();
 		}
 
@@ -55,7 +55,7 @@ public:
 
 		clearQueue();
 
-		for (int i = 0; i < cleanupTasks.size(); i++){
+		for (size_t i = 0; i < cleanupTasks.size(); i++){
 			cleanupTasks[i]();
 		}
 
@@ -68,7 +68,7 @@ private:
 	std::vector<void(*)()> cleanupTasks;
 	
 	void processSingle(T par){
-		for (int i = 0; i < processTasks.size(); i++){
+		for (size_t i = 0; i < processTasks.size(); i++){
 			processTasks[i](par);
 		}
 	}

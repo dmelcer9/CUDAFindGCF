@@ -1,6 +1,11 @@
 #include "PrintToFile.h"
 
-CSVWriter* writer = NULL;
+namespace PTF{
+	CSVWriter* writer = NULL;
+}
+using PTF::writer;
+
+static int zeroNum = 0;
 
 void setupPrintToFile(){
 	time_t currentTime;
@@ -9,12 +14,14 @@ void setupPrintToFile(){
 	time(&currentTime);
 	timeInfo = localtime(&currentTime);
 
+	zeroNum++;
+
 	std::stringstream filename;
-	filename << "Result " << timeInfo->tm_year + 1900 << " " << timeInfo->tm_mon + 1 << " " <<
-		timeInfo->tm_mday << " " << timeInfo->tm_hour << " " << timeInfo->tm_min << " " << timeInfo->tm_sec << ".csv";
+	filename << "Result GPU Zero#"<<zeroNum<<" on " << timeInfo->tm_year + 1900 << " " << timeInfo->tm_mon + 1 << " " <<
+		timeInfo->tm_mday << " at " << timeInfo->tm_hour << " " << timeInfo->tm_min << " " << timeInfo->tm_sec << ".csv";
 
 
-	writer = new CSVWriter(filename.str());
+	writer = new CSVWriter(filename.str(),CSV_RUNRECORD);
 }
 
 void processPrintToFile(runRecord r){

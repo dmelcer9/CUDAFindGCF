@@ -23,6 +23,7 @@ const long long GMAX = 19L;
 #define PRINTRESULTS //Print results to console
 #define PRINTTOFILE //Save results to file
 #define PRINTPROGRESS //Print out progress messages periodacally
+//#define PROCESSFILTEREDFRACTIONS
 
 #define RANGE(NUM) (NUM##MAX + 1 - NUM##MIN)
 
@@ -168,78 +169,107 @@ __global__ void calculateGCF(unsigned long long int offset, runRecord* recordPoi
 
 int main(){
 
-	ProcessQueue<runRecord> queue;
-
-#ifdef PRINTTOFILE
-	queue.addSetup(setupPrintToFile);
-	queue.addProcess(processPrintToFile);
-	queue.addCleanup(cleanupPrintToFile);
-#endif
-
-#ifdef PRINTRESULTS
-	queue.addProcess(printRecord);
-#endif
-	
-	queue.setup();
-
-	std::cout << std::setprecision(15);
-
-	runRecord* d_recordPointer;
-	unsigned long long int* d_recordNum;
-
-	CHECK_CUDA(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
-
-	CHECK_CUDA(cudaMalloc(&d_recordPointer, sizeof(runRecord)*THREADSATONCE));
-	CHECK_CUDA(cudaMalloc(&d_recordNum, sizeof(unsigned long long int)));
+	double zeroes[] = {
+		14.134725141734693790457251983562470270784257115699243175685567460149,
+		21.022039638771554992628479593896902777334340524902781754629520403587,
+		25.010857580145688763213790992562821818659549672557996672496542006745,
+		30.424876125859513210311897530584091320181560023715440180962146036993,
+		32.935061587739189690662368964074903488812715603517039009280003440784,
+		37.586178158825671257217763480705332821405597350830793218333001113622,
+		40.918719012147495187398126914633254395726165962777279536161303667253,
+		43.327073280914999519496122165406805782645668371836871446878893685521,
+		48.005150881167159727942472749427516041686844001144425117775312519814,
+		49.773832477672302181916784678563724057723178299676662100781955750433
+	};
 
 	cudaEvent_t startingevent, endevent;
 	CHECK_CUDA(cudaEventCreate(&startingevent));
 	CHECK_CUDA(cudaEventCreate(&endevent));
 	CHECK_CUDA(cudaEventRecord(startingevent));
 
-	for (unsigned long long int i = 0; i < NUMRUNS; i++){
+	for (int z = 0; z < 10; z++){
+
+		ProcessQueue<runRecord> queue;
+
+#ifdef PRINTTOFILE
+		queue.addSetup(setupPrintToFile);
+		queue.addProcess(processPrintToFile);
+		queue.addCleanup(cleanupPrintToFile);
+#endif
+
+#ifdef PRINTRESULTS
+		queue.addProcess(printRecord);
+#endif
+
+#ifdef PROCESSFILTEREDFRACTIONS
+		queue.addSetup(setupProcessFilteredFractions);
+		queue.addProcess(processFraction);
+		queue.addCleanup(cleanupFilteredFractions);
+#endif
+
+		queue.setup();
+
+		std::cout << std::setprecision(15);
+
+		runRecord* d_recordPointer;
+		unsigned long long int* d_recordNum;
+
+		CHECK_CUDA(cudaDeviceSetCacheConfig(cudaFuncCachePreferL1));
+
+		CHECK_CUDA(cudaMalloc(&d_recordPointer, sizeof(runRecord)*THREADSATONCE));
+		CHECK_CUDA(cudaMalloc(&d_recordNum, sizeof(unsigned long long int)));
 
 		
 
-		CHECK_CUDA(cudaMemset(d_recordNum, 0, sizeof(unsigned long long int)));
-		//14.13472514173469
-		calculateGCF << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, 14.13472514173469);
-		queue.clearQueue();
-
-		unsigned long long int h_recordNum;
-		CHECK_CUDA(cudaMemcpy(&h_recordNum, d_recordNum, sizeof(unsigned long long int), cudaMemcpyDeviceToHost));
+		for (unsigned long long int i = 0; i < NUMRUNS; i++){
 
 
-		runRecord* h_recordPointer = (runRecord*)malloc(h_recordNum*sizeof(runRecord));
-		CHECK_CUDA(cudaMemcpy(h_recordPointer, d_recordPointer, h_recordNum*sizeof(runRecord), cudaMemcpyDeviceToHost));
+
+			CHECK_CUDA(cudaMemset(d_recordNum, 0, sizeof(unsigned long long int)));
+			//14.13472514173469
+			calculateGCF << <BLOCKS, TPB >> >(i*THREADSATONCE, d_recordPointer, d_recordNum, zeroes[z]);
+			queue.clearQueue();
+
+			unsigned long long int h_recordNum;
+			CHECK_CUDA(cudaMemcpy(&h_recordNum, d_recordNum, sizeof(unsigned long long int), cudaMemcpyDeviceToHost));
 
 
-		for (int j = 0; j < h_recordNum; j++){
-			queue.addTask(h_recordPointer[j]);
-		}
+			runRecord* h_recordPointer = (runRecord*)malloc(h_recordNum*sizeof(runRecord));
+			CHECK_CUDA(cudaMemcpy(h_recordPointer, d_recordPointer, h_recordNum*sizeof(runRecord), cudaMemcpyDeviceToHost));
+
+
+			for (int j = 0; j < h_recordNum; j++){
+				queue.addTask(h_recordPointer[j]);
+			}
 
 #ifdef PRINTPROGRESS
-		if(i%100==0) std::cout << "Offset: " << i*THREADSATONCE << ", Progress: " << ((double)i * 100) / NUMRUNS << "%" << std::endl;
+			if (i % 100 == 0) std::cout << "Offset: " << i*THREADSATONCE << ", Progress: " << ((double)i * 100) / NUMRUNS << "%" << std::endl;
 #endif
 
-		free(h_recordPointer);
+			free(h_recordPointer);
+		}
+
+
+		queue.clearQueue();
+		queue.finish();
+
+		
+
+		CHECK_CUDA(cudaFree(d_recordPointer));
+		CHECK_CUDA(cudaFree(d_recordNum));
+
 	}
 
-
-	queue.clearQueue();
-	queue.finish();
-	
 	CHECK_CUDA(cudaEventRecord(endevent));
 
 	float timeElapsed = 0;
 	CHECK_CUDA(cudaDeviceSynchronize());
 
 	CHECK_CUDA(cudaEventElapsedTime(&timeElapsed, startingevent, endevent));
-	std::cout << "Time elapsed: " << std::setprecision(0) << timeElapsed/1000 << " seconds" << std::endl;
+	std::cout << "Time elapsed: " << std::setprecision(0) << timeElapsed / 1000 << " seconds" << std::endl;
 
-	CHECK_CUDA(cudaFree(d_recordPointer));
-	CHECK_CUDA(cudaFree(d_recordNum));
 	cudaDeviceReset();
+
 	system("pause");
 	return 0;
 }

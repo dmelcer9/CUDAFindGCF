@@ -1,3 +1,5 @@
+#pragma once
+
 #include "CSVWriter.h"
 #include "RunRecord.h"
 

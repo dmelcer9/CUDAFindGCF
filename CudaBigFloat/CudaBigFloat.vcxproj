@@ -195,6 +195,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
+      <AdditionalIncludeDirectories>C:\Users\dmelcer\Desktop\ttmath-0.9.3;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -239,13 +240,16 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="kernel.cuh" />
     <ClInclude Include="Params.h" />
     <ClInclude Include="PrintToFile.h" />
+    <ClInclude Include="ProcessFilteredFractions.h" />
     <ClInclude Include="ProcessQueue.h" />
     <ClInclude Include="RunRecord.h" />
+    <ClInclude Include="TTRunRecord.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CSVWriter.cpp" />
     <ClCompile Include="Params.cpp" />
     <ClCompile Include="PrintToFile.cpp" />
+    <ClCompile Include="ProcessFilteredFractions.cpp" />
     <ClCompile Include="RunRecord.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
