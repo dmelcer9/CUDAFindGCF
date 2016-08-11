@@ -14,6 +14,8 @@
 #include "ProcessQueue.h"
 #include "PrintToFile.h"
 #include "ProcessFilteredFractions.h"
+#include "PrintBestToFile.h"
+#include "Zeros.h"
 
 __host__ void CHECK_CUDA(cudaError_t cu);
 __device__ void recordRun(params param, double delta, runRecord* recordPointer, unsigned long long int* recordNum);

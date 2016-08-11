@@ -17,6 +17,9 @@ const long long FMAX = 19L;
 const long long GMIN = -19L;
 const long long GMAX = 19L;
 
+#define FIRSTZERO 41
+#define LASTZERO 100
+
 #define MAXTERMS 15
 #define MAXDELTA 1e-7
 
@@ -47,6 +50,25 @@ __host__ void CHECK_CUDA(cudaError_t cu){
 	}
 }
 
+__device__ double2 divideImag(double2 numerator, double2 denom){
+	double2 ret;
+	ret.x = ((numerator.x*denom.x) + (numerator.y*denom.y)) / ((denom.x*denom.x) + (denom.y*denom.y));
+	ret.y = ((numerator.y*denom.x) - (numerator.x*denom.y)) / ((denom.x*denom.x) + (denom.y*denom.y));
+	return ret;
+}
+
+__device__ double2 addImag(double2 arg1, double2 arg2){
+	double2 ret;
+	ret.x = arg1.x + arg2.x;
+	ret.y = arg1.y + arg2.y;
+}
+
+__device__ double2 subImag(double2 arg1, double2 arg2){
+	double2 ret;
+	ret.x = arg1.x - arg2.x;
+	ret.y = arg1.y - arg2.y;
+	return ret;
+}
 
 /**
   * Record the result of a run
@@ -126,6 +148,7 @@ __device__ double calcFraction(params runPars){
 	double convergent = 0;
 
 	for (int iterNum = 0; iterNum < MAXTERMS; iterNum++){
+			
 		double newA = runPars.a*iterNum*iterNum*iterNum + runPars.b*iterNum*iterNum + runPars.c*iterNum + runPars.d;
 		double newB = (iterNum == 0) ? runPars.b0 : runPars.e*iterNum*iterNum + runPars.f*iterNum + runPars.g;
 
@@ -145,6 +168,8 @@ __device__ double calcFraction(params runPars){
 
 	return convergent;
 }
+
+
 
 /**
   * The method for calculating the continued fraction and logging the result
@@ -169,27 +194,22 @@ __global__ void calculateGCF(unsigned long long int offset, runRecord* recordPoi
 
 int main(){
 
-	double zeroes[] = {
-		14.134725141734693790457251983562470270784257115699243175685567460149,
-		21.022039638771554992628479593896902777334340524902781754629520403587,
-		25.010857580145688763213790992562821818659549672557996672496542006745,
-		30.424876125859513210311897530584091320181560023715440180962146036993,
-		32.935061587739189690662368964074903488812715603517039009280003440784,
-		37.586178158825671257217763480705332821405597350830793218333001113622,
-		40.918719012147495187398126914633254395726165962777279536161303667253,
-		43.327073280914999519496122165406805782645668371836871446878893685521,
-		48.005150881167159727942472749427516041686844001144425117775312519814,
-		49.773832477672302181916784678563724057723178299676662100781955750433
-	};
+
 
 	cudaEvent_t startingevent, endevent;
 	CHECK_CUDA(cudaEventCreate(&startingevent));
 	CHECK_CUDA(cudaEventCreate(&endevent));
 	CHECK_CUDA(cudaEventRecord(startingevent));
 
-	for (int z = 0; z < 10; z++){
+	
+	setupBestToFile();
 
+	for (int z = 0; z < 20; z++){
+		setPrintToFileZeroNum(z + 21);
 		ProcessQueue<runRecord> queue;
+
+		queue.addProcess(addResultBestToFile);
+		queue.addCleanup(markBestResult);
 
 #ifdef PRINTTOFILE
 		queue.addSetup(setupPrintToFile);
@@ -259,6 +279,7 @@ int main(){
 		CHECK_CUDA(cudaFree(d_recordNum));
 
 	}
+	flushBestResultToFile();
 
 	CHECK_CUDA(cudaEventRecord(endevent));
 

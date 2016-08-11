@@ -239,15 +239,18 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="CSVWriter.h" />
     <ClInclude Include="kernel.cuh" />
     <ClInclude Include="Params.h" />
+    <ClInclude Include="PrintBestToFile.h" />
     <ClInclude Include="PrintToFile.h" />
     <ClInclude Include="ProcessFilteredFractions.h" />
     <ClInclude Include="ProcessQueue.h" />
     <ClInclude Include="RunRecord.h" />
     <ClInclude Include="TTRunRecord.h" />
+    <ClInclude Include="Zeros.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CSVWriter.cpp" />
     <ClCompile Include="Params.cpp" />
+    <ClCompile Include="PrintBestToFile.cpp" />
     <ClCompile Include="PrintToFile.cpp" />
     <ClCompile Include="ProcessFilteredFractions.cpp" />
     <ClCompile Include="RunRecord.cpp" />
