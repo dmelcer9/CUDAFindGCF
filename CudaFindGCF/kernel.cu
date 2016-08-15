@@ -20,6 +20,8 @@ const long long GMAX = 19L;
 #define FIRSTZERO 41
 #define LASTZERO 100
 
+#define NUMZEROS (1 + LASTZERO - FIRSTZERO)
+
 #define MAXTERMS 15
 #define MAXDELTA 1e-7
 
@@ -204,8 +206,8 @@ int main(){
 	
 	setupBestToFile();
 
-	for (int z = 0; z < 20; z++){
-		setPrintToFileZeroNum(z + 21);
+	for (int z = (FIRSTZERO-1); z < LASTZERO; z++){
+		setPrintToFileZeroNum(z + 1);
 		ProcessQueue<runRecord> queue;
 
 		queue.addProcess(addResultBestToFile);
