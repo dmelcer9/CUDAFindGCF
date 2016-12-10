@@ -2,8 +2,8 @@
 
 CSVWriter::CSVWriter(std::string outfile, int type):fileName(outfile),cache(){
 
-	if(type == CSV_RUNRECORD) cache.push_back("b0,A,B,C,D,E,F,G,Result,Delta\n");
-	else if (type == CSV_TTRECORD) cache.push_back("A,B,C,D,E,F,G,GPU Result, GPU Delta, CPU Result, CPU Delta\n");
+	if(type == CSV_RUNRECORD) cache.push_back("b0,A,AI,B,BI,C,CI,Result,Delta\n");
+	else if (type == CSV_TTRECORD) cache.push_back("A,AI,B,BI,C,CI,GPU Result, GPU Delta, CPU Result, CPU Delta\n");
 
 }
 
@@ -12,12 +12,11 @@ std::stringstream paramsToCSV(params par){
 	strstrm << par.b0 << ",";
 
 	strstrm << par.a << ",";
+	strstrm << par.ai << ",";
 	strstrm << par.b << ",";
+	strstrm << par.bi << ",";
 	strstrm << par.c << ",";
-	strstrm << par.d << ",";
-	strstrm << par.e << ",";
-	strstrm << par.f << ",";
-	strstrm << par.g << ",";
+	strstrm << par.ci << ",";
 
 	return strstrm;
 }

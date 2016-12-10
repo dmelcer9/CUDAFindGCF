@@ -8,14 +8,12 @@ const long long BMIN = -19L;
 const long long BMAX = 19L;
 const long long CMIN = -19L;
 const long long CMAX = 19L;
-const long long DMIN = -19L;
-const long long DMAX = 19L;
-const long long EMIN = -19L;
-const long long EMAX = 19L;
-const long long FMIN = -19L;
-const long long FMAX = 19L;
-const long long GMIN = -19L;
-const long long GMAX = 19L;
+const long long AIMIN = -19L;
+const long long AIMAX = 19L;
+const long long BIMIN = -19L;
+const long long BIMAX = 19L;
+const long long CIMIN = -19L;
+const long long CIMAX = 19L;
 
 #define FIRSTZERO 1
 #define LASTZERO 2
@@ -36,7 +34,7 @@ const long long GMAX = 19L;
 #define BLOCKS 1024
 #define THREADSATONCE (TPB*BLOCKS)
 
-#define PERMUTATIONS (RANGE(A)*RANGE(B)*RANGE(C)*RANGE(D)*RANGE(E)*RANGE(F)*RANGE(G))
+#define PERMUTATIONS (RANGE(A)*RANGE(B)*RANGE(C)*RANGE(AI)*RANGE(BI)*RANGE(CI))
 
 #define NUMRUNS (((PERMUTATIONS-1)/THREADSATONCE)+1)  
 
@@ -107,18 +105,15 @@ __device__ params getParams(unsigned long long int offset, double convergeTo){
 
 	params par;
 
-	
-	par.g = workId % RANGE(G) + GMIN;
-	workId /= RANGE(G);
 
-	par.f = workId % RANGE(F) + FMIN;
-	workId /= RANGE(F);
+	par.ci = workId % RANGE(CI) + CIMIN;
+	workId /= RANGE(CI);
 	
-	par.e = workId % RANGE(E) + EMIN;
-	workId /= RANGE(E);
+	par.bi = workId % RANGE(BI) + BIMIN;
+	workId /= RANGE(BI);
 
-	par.d = workId % RANGE(D) + DMIN;
-	workId /= RANGE(D);
+	par.ai = workId % RANGE(AI) + AIMIN;
+	workId /= RANGE(AI);
 
 	par.c = workId % RANGE(C) + CMIN;
 	workId /= RANGE(C);

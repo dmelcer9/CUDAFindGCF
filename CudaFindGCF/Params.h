@@ -7,10 +7,9 @@ typedef struct params{
 	int a;
 	int b;
 	int c;
-	int d;
-	int e;
-	int f;
-	int g;
+	int ai;
+	int bi;
+	int ci;
 } params;
 
 std::string paramsToString(params par);
