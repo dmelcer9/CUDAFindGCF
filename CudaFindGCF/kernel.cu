@@ -1,7 +1,7 @@
 
 #include "kernel.cuh"
 
-//Minimum and maximum values for search
+//Minimum and maximum parameters for search
 const long long AMIN = -19L;
 const long long AMAX = 19L;
 const long long BMIN = -19L;
@@ -17,8 +17,8 @@ const long long FMAX = 19L;
 const long long GMIN = -19L;
 const long long GMAX = 19L;
 
-#define FIRSTZERO 41
-#define LASTZERO 100
+#define FIRSTZERO 1
+#define LASTZERO 2
 
 #define NUMZEROS (1 + LASTZERO - FIRSTZERO)
 
@@ -27,7 +27,7 @@ const long long GMAX = 19L;
 
 #define PRINTRESULTS //Print results to console
 #define PRINTTOFILE //Save results to file
-#define PRINTPROGRESS //Print out progress messages periodacally
+#define PRINTPROGRESS //Print out progress messages periodically
 //#define PROCESSFILTEREDFRACTIONS
 
 #define RANGE(NUM) (NUM##MAX + 1 - NUM##MIN)
@@ -94,7 +94,8 @@ __device__ void recordRun(params param, double result, double delta, runRecord* 
 
 /**
   * Get the runtime parameters
-  * @param offset the offset tfor the parameters
+  * @param offset the offset for the parameters
+  * @return the parameters for the run
   */
 __device__ params getParams(unsigned long long int offset, double convergeTo){
 	unsigned long long int blocksz = blockDim.x*blockDim.y*blockDim.z;
@@ -128,8 +129,6 @@ __device__ params getParams(unsigned long long int offset, double convergeTo){
 	par.a = workId % RANGE(A) + AMIN;
 	
 	par.b0 = (int)convergeTo;
-
-	
 	
 	return par;
 
@@ -138,6 +137,7 @@ __device__ params getParams(unsigned long long int offset, double convergeTo){
 /**
   * Calculate a continued fraction, given the starting parameters.
   * @param par The starting parameters of the calculation
+  * @return the number that the algorithm converged to
   */
 __device__ double calcFraction(params runPars){
 
