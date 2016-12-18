@@ -18,9 +18,9 @@
 #include "Zeros.h"
 
 __host__ void CHECK_CUDA(cudaError_t cu);
-__device__ void recordRun(params param, double delta, runRecord* recordPointer, unsigned long long int* recordNum);
-__device__ params getParams(unsigned long long int offset);
+__device__ void recordRun(params param, double2 result, double delta, runRecord* recordPointer, unsigned long long int* recordNum);
+__device__ params getParams(unsigned long long int offset, double convergeTo);
 __global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo);
-__device__ double calcFraction(params runPars);
+__device__ double2 calcFraction(params runPars);
 
 int main();

@@ -50,6 +50,13 @@ __host__ void CHECK_CUDA(cudaError_t cu){
 	}
 }
 
+__device__ double2 multiplyImag(double2 arg1, double2 arg2) {
+	double2 ret;
+	ret.x = ((arg1.x*arg2.x) - (arg1.y*arg2.y));
+	ret.y = ((arg1.y*arg2.x) + (arg1.x*arg2.y));
+	return ret;
+}
+
 __device__ double2 divideImag(double2 numerator, double2 denom){
 	double2 ret;
 	ret.x = ((numerator.x*denom.x) + (numerator.y*denom.y)) / ((denom.x*denom.x) + (denom.y*denom.y));
@@ -70,6 +77,10 @@ __device__ double2 subImag(double2 arg1, double2 arg2){
 	return ret;
 }
 
+__device__ double absImag(double2 arg) {
+	return sqrt((arg.x*arg.x) + (arg.y*arg.y));
+}
+
 /**
   * Record the result of a run
   * @param param the starting parameters of the function
@@ -78,7 +89,7 @@ __device__ double2 subImag(double2 arg1, double2 arg2){
   * @param recordPointer a the array where the records are stored
   * @param recordNum a pointer to the current record index
   */
-__device__ void recordRun(params param, double result, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
+__device__ void recordRun(params param, double2 result, double delta, runRecord* recordPointer, unsigned long long int* recordNum){
 	unsigned long long int address = atomicAdd(recordNum, 1);
 
 	runRecord curRec;
@@ -134,25 +145,42 @@ __device__ params getParams(unsigned long long int offset, double convergeTo){
   * @param par The starting parameters of the calculation
   * @return the number that the algorithm converged to
   */
-__device__ double calcFraction(params runPars){
+__device__ double2 calcFraction(params runPars){
 
-	double hBefore1 = 1;
-	double hBefore2 = 0;
-	double kBefore1 = 0;
-	double kBefore2 = 1;
-	double aBefore = 1;
+	double2 hBefore1;
+	hBefore1.x= 1;
+	double2 hBefore2;
+	hBefore2.x = 0;
+	double2 kBefore1;
+	kBefore1.x = 0;
+	double2 kBefore2;
+	kBefore2.x = 1;
+	double2 aBefore;
+	aBefore.x = 1;
 
-	double convergent = 0;
+	double2 convergent;
+	convergent.x = 0;
+
+	double2 paramA, paramB, paramC;
+	paramA.x = runPars.a;
+	paramA.y = runPars.ai;
+	paramB.x = runPars.b;
+	paramB.y = runPars.bi;
+	paramC.x = runPars.c;
+	paramC.y = runPars.ci;
 
 	for (int iterNum = 0; iterNum < MAXTERMS; iterNum++){
-			
-		double newA = runPars.a*iterNum*iterNum*iterNum + runPars.b*iterNum*iterNum + runPars.c*iterNum + runPars.d;
-		double newB = (iterNum == 0) ? runPars.b0 : runPars.e*iterNum*iterNum + runPars.f*iterNum + runPars.g;
+		
+		double2 iter2;
+		iter2.x = iterNum;
 
-		double curNum = newB*hBefore1 + aBefore*hBefore2;
-		double curDen = newB*kBefore1 + aBefore*kBefore2;
+		double2 newA = addImag(multiplyImag(paramA, iter2), paramB);
+		double2 newB = paramC;
 
-		convergent = curNum / curDen;
+		double2 curNum = addImag(multiplyImag(newB, hBefore1), multiplyImag(aBefore, hBefore2));
+		double2 curDen = addImag(multiplyImag(newB, kBefore1), multiplyImag(aBefore, kBefore2));
+
+		convergent = divideImag( curNum , curDen);
 
 		hBefore2 = hBefore1;
 		hBefore1 = curNum;
@@ -178,9 +206,13 @@ __device__ double calcFraction(params runPars){
 __global__ void calculateGCF(unsigned long long int offset, runRecord* recordPointer, unsigned long long int* recordNum, double convergeTo){
 	params runPars = getParams(offset,convergeTo);
 
-	double convergent = calcFraction(runPars);
+	double2 convergent = calcFraction(runPars);
 
-	double delta = abs(convergent - convergeTo);
+	double2 convergeToImag;
+	convergeToImag.x = .5;
+	convergeToImag.y = convergeTo;
+
+	double delta = absImag(subImag( convergent , convergeToImag));
 
 	if (delta < MAXDELTA){
 		recordRun(runPars, convergent, delta, recordPointer, recordNum);
