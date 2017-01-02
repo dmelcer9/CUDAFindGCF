@@ -2,7 +2,7 @@
 
 std::string runRecordToString(runRecord rec){
 	std::ostringstream os;
-	os << paramsToString(rec.param) << std::setprecision(15) << ", result= " << rec.result << ", delta= " << rec.delta;
+	os << paramsToString(rec.param) << std::setprecision(15) << ", result= " << rec.resultReal<<" + "<<rec.resultImag << "i, delta= " << rec.delta;
 	return os.str();
 }
 

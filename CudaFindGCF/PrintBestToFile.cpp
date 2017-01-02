@@ -30,7 +30,7 @@ void addResultBestToFile(runRecord r){
 
 void markBestResult(){
 	std::nth_element(records.begin(), records.begin(), records.end(), lowerDelta);
-	recordWriter->write(records[0]);
+	if(records.size()!=0) recordWriter->write(records[0]);
 	records.clear();
 	flushBestResultToFile();
 }

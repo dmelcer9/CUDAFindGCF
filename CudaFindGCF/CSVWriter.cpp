@@ -2,7 +2,7 @@
 
 CSVWriter::CSVWriter(std::string outfile, int type):fileName(outfile),cache(){
 
-	if(type == CSV_RUNRECORD) cache.push_back("b0,A,AI,B,BI,C,CI,Result,Delta\n");
+	if(type == CSV_RUNRECORD) cache.push_back("b0,A,AI,B,BI,C,CI,ResultReal,ResultImag,Delta\n");
 	else if (type == CSV_TTRECORD) cache.push_back("A,AI,B,BI,C,CI,GPU Result, GPU Delta, CPU Result, CPU Delta\n");
 
 }
@@ -27,7 +27,7 @@ void CSVWriter::write(runRecord r){
 
 	strstrm << std::setprecision(16);
 
-	strstrm << r.result << ",";
+	strstrm << r.resultReal << ","<<r.resultImag<<",";
 	strstrm << r.delta << std::endl;
 
 	write(strstrm.str());
@@ -37,7 +37,7 @@ void CSVWriter::write(runRecord r){
 void CSVWriter::write(TTrunRecord r){
 	std::stringstream strstrm = paramsToCSV(r.rec.param);
 
-	strstrm << r.rec.result << ",";
+	strstrm << r.rec.resultReal << ","<<r.rec.resultImag<<",";
 	strstrm << r.rec.delta << ",";
 
 	

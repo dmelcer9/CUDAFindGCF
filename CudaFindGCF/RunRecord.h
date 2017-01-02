@@ -9,7 +9,8 @@
 
 typedef struct runRecord{
 	params param;
-	double result;
+	double resultReal;
+	double resultImag;
 	double delta;
 } runRecord;
 

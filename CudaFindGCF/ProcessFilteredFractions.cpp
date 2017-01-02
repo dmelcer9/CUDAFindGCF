@@ -1,5 +1,5 @@
 #include "ProcessFilteredFractions.h"
-
+/*
 namespace PFF{
 	CSVWriter* writer = NULL;
 }
@@ -69,4 +69,4 @@ void processFraction(runRecord r){
 void cleanupFilteredFractions(){
 	writer->flush();
 	delete writer;
-}
+}*/

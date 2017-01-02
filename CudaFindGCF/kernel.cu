@@ -16,12 +16,12 @@ const long long CIMIN = -19L;
 const long long CIMAX = 19L;
 
 #define FIRSTZERO 1
-#define LASTZERO 2
+#define LASTZERO 100
 
 #define NUMZEROS (1 + LASTZERO - FIRSTZERO)
 
 #define MAXTERMS 15
-#define MAXDELTA 1e-7
+#define MAXDELTA 1
 
 #define PRINTRESULTS //Print results to console
 #define PRINTTOFILE //Save results to file
@@ -68,6 +68,7 @@ __device__ double2 addImag(double2 arg1, double2 arg2){
 	double2 ret;
 	ret.x = arg1.x + arg2.x;
 	ret.y = arg1.y + arg2.y;
+	return ret;
 }
 
 __device__ double2 subImag(double2 arg1, double2 arg2){
@@ -95,7 +96,8 @@ __device__ void recordRun(params param, double2 result, double delta, runRecord*
 	runRecord curRec;
 	curRec.param = param;
 	curRec.delta = delta;
-	curRec.result = result;
+	curRec.resultReal = result.x;
+	curRec.resultImag = result.y;
 
 	recordPointer[address] = curRec;	
 	
