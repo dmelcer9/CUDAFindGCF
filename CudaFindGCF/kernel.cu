@@ -52,25 +52,6 @@ __host__ void CHECK_CUDA(cudaError_t cu){
 	}
 }
 
-__device__ double2 divideImag(double2 numerator, double2 denom){
-	double2 ret;
-	ret.x = ((numerator.x*denom.x) + (numerator.y*denom.y)) / ((denom.x*denom.x) + (denom.y*denom.y));
-	ret.y = ((numerator.y*denom.x) - (numerator.x*denom.y)) / ((denom.x*denom.x) + (denom.y*denom.y));
-	return ret;
-}
-
-__device__ double2 addImag(double2 arg1, double2 arg2){
-	double2 ret;
-	ret.x = arg1.x + arg2.x;
-	ret.y = arg1.y + arg2.y;
-}
-
-__device__ double2 subImag(double2 arg1, double2 arg2){
-	double2 ret;
-	ret.x = arg1.x - arg2.x;
-	ret.y = arg1.y - arg2.y;
-	return ret;
-}
 
 /**
   * Record the result of a run
